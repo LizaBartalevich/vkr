@@ -3,6 +3,7 @@ package com.example.mynewapplication.ui.screens
 import android.Manifest
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -14,26 +15,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.mynewapplication.ui.viewmodel.KanjiViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import androidx.core.graphics.scale
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CameraScreen(
-    navController: NavController,
-    viewModel: KanjiViewModel,
-    coroutineScope: CoroutineScope
-) {
+fun HomeScreen(navController: NavController, viewModel: KanjiViewModel) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -99,10 +94,8 @@ fun CameraScreen(
 
     LaunchedEffect(recognizedKanji) {
         if (!isRecognizing && recognizedKanji.isNotEmpty()) {
-            // Переходим на страницу списка иероглифов
-            coroutineScope.launch(Dispatchers.Main) {
-                navController.navigate("kanji_list")
-            }
+            // Переходим на страницу первого распознанного иероглифа
+            navController.navigate("kanjiDetail/${recognizedKanji.first()}")
             capturedBitmap = null // Сбрасываем захваченное изображение после перехода
         }
     }
@@ -121,6 +114,7 @@ fun CameraScreen(
                     cameraExecutor = cameraExecutor,
                     modifier = Modifier.fillMaxSize(),
                     onImageCaptured = { bitmap ->
+                        Log.d("HomeScreen", "Image captured successfully")
                         capturedBitmap = bitmap // Сохраняем захваченное изображение
                         hasAttemptedRecognition = true
                         viewModel.recognizeKanji(bitmap)
@@ -154,6 +148,7 @@ fun CameraScreen(
                 ) {
                     Button(
                         onClick = {
+                            Log.d("HomeScreen", "Capture button clicked")
                             capturedBitmap = null
                             hasAttemptedRecognition = false
                         }

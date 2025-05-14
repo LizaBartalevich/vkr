@@ -2,7 +2,7 @@ package com.example.mynewapplication.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -11,125 +11,71 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.mynewapplication.ui.viewmodel.KanjiViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CollectionDetailsScreen(collectionId: Int, navController: NavController, viewModel: KanjiViewModel) {
     val collections by viewModel.collections.collectAsState()
-    val collection = collections.find { coll -> coll.id == collectionId }
-    var showRenameDialog by remember { mutableStateOf(false) }
-    var newCollectionName by remember { mutableStateOf("") }
-    var searchKanjiQuery by remember { mutableStateOf("") }
+    val collection = collections.find { it.id == collectionId }
 
-    if (collection != null) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = collection.name,
-                style = MaterialTheme.typography.headlineLarge,
-                modifier = Modifier.padding(bottom = 8.dp)
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(collection?.name ?: "Collection Details") },
+                navigationIcon = {
+                    TextButton(onClick = { navController.popBackStack() }) {
+                        Text("Back")
+                    }
+                }
             )
-            Row(
+        }
+    ) { padding ->
+        if (collection == null) {
+            Text(
+                text = "Collection not found",
+                style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween
+                    .padding(padding)
+                    .padding(16.dp)
+            )
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
             ) {
-                Button(
-                    onClick = { showRenameDialog = true },
-                    modifier = Modifier.weight(1f).padding(end = 4.dp)
-                ) {
-                    Text("Rename")
-                }
-                Button(
-                    onClick = {
-                        viewModel.deleteCollection(collection)
-                        navController.popBackStack()
-                    },
-                    modifier = Modifier.weight(1f).padding(start = 4.dp)
-                ) {
-                    Text("Delete")
-                }
-            }
-            TextField(
-                value = searchKanjiQuery,
-                onValueChange = { searchKanjiQuery = it },
-                label = { Text("Search Kanji in Collection") },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 8.dp)
-            )
-            Text(
-                text = "Kanji in Collection:",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            val filteredKanji = collection.kanjiList.split(",").filter { kanji ->
-                kanji.contains(searchKanjiQuery, ignoreCase = true)
-            }
-            LazyColumn {
-                items(filteredKanji) { kanji: String ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = kanji,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable {
-                                    navController.navigate("kanji_details/$kanji")
-                                }
-                                .padding(8.dp)
-                        )
-                        Button(
-                            onClick = {
-                                viewModel.removeFromCollection(collection, kanji)
-                            }
-                        ) {
-                            Text("Remove")
-                        }
-                    }
-                }
-            }
-        }
-
-        // Диалог для переименования коллекции
-        if (showRenameDialog) {
-            AlertDialog(
-                onDismissRequest = { showRenameDialog = false },
-                title = { Text("Rename Collection") },
-                text = {
-                    TextField(
-                        value = newCollectionName,
-                        onValueChange = { newCollectionName = it },
-                        label = { Text("New Collection Name") },
-                        modifier = Modifier.fillMaxWidth()
+                Text(
+                    text = "Kanji in ${collection.name}",
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                val kanjiList = collection.kanjiList.split(",").filter { it.isNotEmpty() }
+                if (kanjiList.isEmpty()) {
+                    Text(
+                        text = "No kanji in this collection yet.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(16.dp)
                     )
-                },
-                confirmButton = {
-                    Button(
-                        onClick = {
-                            if (newCollectionName.isNotBlank()) {
-                                viewModel.renameCollection(collection, newCollectionName)
-                                showRenameDialog = false
-                                newCollectionName = ""
+                } else {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(kanjiList) { kanji ->
+                            Card(
+                                modifier = Modifier
+                                    .clickable { navController.navigate("kanjiDetail/$kanji") }
+                                    .padding(4.dp)
+                            ) {
+                                Text(
+                                    text = kanji,
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    modifier = Modifier.padding(16.dp)
+                                )
                             }
                         }
-                    ) {
-                        Text("Rename")
-                    }
-                },
-                dismissButton = {
-                    Button(onClick = { showRenameDialog = false }) {
-                        Text("Cancel")
                     }
                 }
-            )
+            }
         }
-    } else {
-        Text(
-            text = "Collection not found",
-            modifier = Modifier.padding(16.dp)
-        )
     }
 }
